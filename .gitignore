@@ -1,0 +1,7 @@
+.svn
+.DS_Store
+a.out
+*.a
+*.so
+*.o
+
