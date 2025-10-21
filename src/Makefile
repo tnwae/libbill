@@ -1,8 +1,8 @@
-CFLAGS = -Wall -Wextra -pedantic -std=gnu99 -g -I../include -m64
+CFLAGS = -Wall -Wextra -pedantic -std=gnu99 -g -I../include
 
 all: libbill.a
 
-OBJS = libbill.o text_file_preprocess.o compare.o text_file_read.o
+OBJS = libbill.o text_file_preprocess.o compare.o text_file_read.o blist.o bstring.o lbexit.o
 
 docs:
 	doxygen Doxyfile
