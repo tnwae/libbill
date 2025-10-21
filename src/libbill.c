@@ -1,5 +1,6 @@
 /*
- * Utility functions for libbill.  Includes creation and deletion of bstring, a slightly friendlier string type.
+ * Utility functions for libbill.  Includes creation and deletion of bstring, a slightly
+ * friendlier string type.
  *
  * $Id: libbill.c 4 2012-10-25 15:00:30Z wae $
  */
@@ -9,36 +10,77 @@
 #include <string.h>
 #include <stdarg.h>
 #include <stdbool.h>
+#include <execinfo.h>
 #include <libbill.h>
+#include <lbexit.h>
 
 static bool debugp;
 static FILE *debug_out;
 static bstring *version;
+lb_exit_code lb_exit_status;
 
-void libbill_init()
+void libbill_init(void)
 {
    atexit(libbill_cleanup);
-   debugp = true;
+   atexit(libbill_backtrace);
+   atexit(libbill_friendly_exit);
    debug_out = stderr;
-   version = bstring_create("libbill: this is version 0.1");
+   libbill_set_debug();
+   version = bstring_create("0.2");
 }
 
-bstring *libbill_get_version() {
+bstring *libbill_get_version(void)
+{
    return version;
 }
 
-void libbill_set_no_debug() {
+void libbill_set_no_debug(void)
+{
+  message("libbill: set debug mode to off\n");
   debugp = false;
 }
 
-void libbill_set_debug() {
+void libbill_set_debug(void)
+{
   debugp = true;
   message("libbill: set debug mode to on\n");
 }
 
-void libbill_set_debug_output(char *path) {
+void libbill_set_debug_output(char *path)
+{
   message("libbill: setting debug output to: %s\n", path);
-  newhandle(debug_out, path, "w");
+  debug_out = fopen(path, "w");
+  if(debug_out == NULL) {
+    perror(__func__);
+    depart(254);
+  }
+}
+
+void libbill_backtrace(void)
+{
+  if(debugp && lb_exit_status != LB_SUCCESS) {
+    void *array[32];
+    int size = backtrace(array, 32);
+    char **symbols = backtrace_symbols(array, size);
+    if(symbols == NULL) {
+      return;
+    }
+
+    for(int i = 0; i < size; i++) {
+      message("%s\n", symbols[i]);
+    }
+
+    free(symbols);
+  }
+
+  return;
+}
+
+void libbill_friendly_exit(void)
+{
+  if(debugp) {
+    message("libbill: %s\n", BSTR(lb_get_exit_string(lb_exit_status)));
+  }
 }
 
 // For a given format string (printf-style) and argument list, print them out.
@@ -53,20 +95,8 @@ void message(const char *fmt, ...)
 }
 
 // Clean up all the crud from the library.
-void libbill_cleanup() {
+void libbill_cleanup(void) {
   if(debug_out != stderr)
     fclose(debug_out);
   bstring_delete(version);
-}
-
-bstring *bstring_create(char *contents) {
-  bstring *mystring = (bstring *) malloc(sizeof(bstring));
-  mystring->contents = strdup(contents);
-  mystring->length = strlen(contents);
-  return mystring;
-}
-
-void bstring_delete(bstring *deleteme) {
-  free(deleteme->contents);
-  free(deleteme);
 }
