@@ -22,7 +22,12 @@ char *text_file_read(char *path)
    char *contents = NULL;
    int size, count;
 
-   newhandle(handle, path, "r");
+   handle = fopen(path, "r");
+   if(handle == NULL) {
+     message("failed reading file %s\n", path);
+     perror(__func__);
+     depart(254);
+   }
 
    // how big is the file, portably
    fseek(handle, 0, SEEK_END);
@@ -31,8 +36,14 @@ char *text_file_read(char *path)
 
    // if there's a file, load it
    if(0 < size) {
-      newptr(contents, char, size + 1);
+      contents = (char*) malloc(sizeof(char) * (size + 1));
+      if(contents == NULL) {
+        perror(__func__);
+        depart(255);
+      }
+
       count = fread(contents, sizeof(char), size, handle);
+      message("%s: read %d bytes from %s\n", __func__, count, path);
       contents[size] = '\0';
    }
 

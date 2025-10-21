@@ -22,15 +22,19 @@
  */
 char *text_file_preprocess(char *file)
 {
-  char *contents = NULL, buffer[BUFSIZ] , *line;
-  int size, skipped = 0, lines = 0, offset = 0;
+  char *contents = NULL, *line;
+  int size, offset = 0, skipped = 0, lines = 0;
   FILE *handle;
 
   handle = fopen(file, "r");
   if(handle == NULL)
     return NULL;
 
-  newptr(line, char, 1024);
+  line = (char*) malloc(sizeof(char) * 1024);
+  if(line == NULL) {
+    perror(__func__);
+    depart(255);
+  }
 
   // how big is the file, portably
   fseek(handle, 0, SEEK_END);
@@ -39,7 +43,11 @@ char *text_file_preprocess(char *file)
 
   // if there's a file, load it selectively with the wonders of grep
   if(size > 0) {
-    newptr(contents, char, size + 1);
+    contents = (char*) malloc(sizeof(char) * (size + 1));
+    if(contents == NULL) {
+      perror(__func__);
+      depart(255);
+    }
     memset(contents, 0, size + 1);
 
     for(;;) {
